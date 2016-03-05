@@ -54,8 +54,10 @@ defmodule GraphQL.Execution.Executor.ExecutorTest do
       }
     end
 
-    def greeting(_, %{name: name}, _), do: "Hello, #{name}!"
-    def greeting(_, _, _), do: "Hello, world!"
+    def greeting(_, args, _) do
+      IO.inspect args
+      "Hello, world!"
+    end
   end
 
   test "basic query execution" do
@@ -64,6 +66,28 @@ defmodule GraphQL.Execution.Executor.ExecutorTest do
 
   test "query arguments" do
     assert_execute {~S[{ greeting(name: "Elixir") }], TestSchema.schema}, %{greeting: "Hello, Elixir!"}
+  end
+
+  test "default arguments" do
+    query = """
+      query name($name: String = "Joe")
+      {
+        greeting(name: $name)
+      }
+    """
+
+    assert_execute {query, TestSchema.schema},
+      %{"greeting" => "Hello, Joe!"}
+  end
+
+  test "more arguments" do
+    query = """
+      query hello($foo: String) {
+        greeting
+      }
+    """
+
+    assert_execute {query, TestSchema.schema}, %{}
   end
 
   test "anonymous fragments are processed" do
@@ -180,7 +204,7 @@ defmodule GraphQL.Execution.Executor.ExecutorTest do
         fields: %{b: %{ type: %String{}}}
       }
     }
-    data = %{"a" => "A", b: "B"}
+    data = %{a: "A", b: "B"}
     assert_execute {"query Q { a } mutation M { b }", schema, data, nil, "Q"}, %{a: "A"}
   end
 
